@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Healthcare Cost Navigator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .section {
+      margin: 30px 0;
+      padding: 20px;
+      border: 1px solid #ddd;
+    }
+
+    input,
+    select,
+    button {
+      padding: 8px;
+      margin: 5px;
+    }
+
+    button {
+      background: #007cba;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #005a8b;
+    }
+
+    .results {
+      margin-top: 20px;
+      padding: 10px;
+      background: #f5f5f5;
+    }
+
+    .hospital {
+      margin: 10px 0;
+      padding: 10px;
+      border-left: 3px solid #007cba;
+    }
+
+    .error {
+      color: red;
+    }
+
+    .loading {
+      color: #666;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Healthcare Cost Navigator</h1>
+    <p>Search for hospitals and get AI-powered cost insights</p>
+
+    <!-- Provider Search Section -->
+    <div class="section">
+      <h2>Search Hospitals</h2>
+      <form id="searchForm">
+        <div>
+          <label>DRG Code or Procedure:</label><br>
+          <input type="text" id="drg" placeholder="e.g., 470 or joint replacement" style="width: 300px;">
+        </div>
+        <div>
+          <label>ZIP Code:</label><br>
+          <input type="text" id="zipCode" placeholder="e.g., 10001" style="width: 150px;">
+        </div>
+        <div>
+          <label>Radius (km):</label><br>
+          <input type="number" id="radius" value="25" min="1" max="100" style="width: 100px;">
+        </div>
+        <div>
+          <label>Max Results:</label><br>
+          <input type="number" id="limit" value="10" min="1" max="50" style="width: 100px;">
+        </div>
+        <button type="submit">Search Hospitals</button>
+      </form>
+      <div id="searchResults" class="results" style="display: none;"></div>
+    </div>
+
+    <!-- AI Assistant Section -->
+    <div class="section">
+      <h2>AI Assistant</h2>
+      <p>Ask questions in natural language about hospital costs and ratings.</p>
+      <form id="askForm">
+        <div>
+          <label>Your Question:</label><br>
+          <input type="text" id="question" placeholder="e.g., Who is cheapest for DRG 470 near 10001?"
+            style="width: 500px;">
+        </div>
+        <button type="submit">Ask Question</button>
+      </form>
+      <div id="askResults" class="results" style="display: none;"></div>
+    </div>
+
+    <!-- Example Questions -->
+    <div class="section">
+      <h3>Example Questions to Try:</h3>
+      <ul>
+        <li><button class="example-btn" data-question="Who is cheapest for DRG 470 within 25 miles of 10001?">Cheapest
+            joint replacement near 10001</button></li>
+        <li><button class="example-btn" data-question="Which hospitals have the best ratings for heart surgery?">Best
+            rated heart surgery hospitals</button></li>
+        <li><button class="example-btn"
+            data-question="What are the average costs for knee replacement in New York?">Average knee replacement
+            costs</button></li>
+        <li><button class="example-btn" data-question="Which hospital does the most joint replacements?">Highest volume
+            joint replacement</button></li>
+        <li><button class="example-btn" data-question="Show me cardiac surgery centers with ratings above 8">High-rated
+            cardiac centers</button></li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:8000';
+
+    // Search Form Handler
+    document.getElementById('searchForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const drg = document.getElementById('drg').value;
+      const zipCode = document.getElementById('zipCode').value;
+      const radius = document.getElementById('radius').value;
+      const limit = document.getElementById('limit').value;
+
+      const resultsDiv = document.getElementById('searchResults');
+      resultsDiv.style.display = 'block';
+      resultsDiv.innerHTML = '<div class="loading">Searching hospitals...</div>';
+
+      try {
+        const params = new URLSearchParams();
+        if (drg) params.append('drg', drg);
+        if (zipCode) params.append('zip', zipCode);
+        if (radius) params.append('radius_km', radius);
+        if (limit) params.append('limit', limit);
+
+        const response = await fetch(`${API_BASE}/providers?${params}`);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        displaySearchResults(data);
+
+      } catch (error) {
+        resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      }
+    });
+
+    // Ask Form Handler
+    document.getElementById('askForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const question = document.getElementById('question').value.trim();
+      if (!question) return;
+
+      const resultsDiv = document.getElementById('askResults');
+      resultsDiv.style.display = 'block';
+      resultsDiv.innerHTML = '<div class="loading">Processing your question...</div>';
+
+      try {
+        const response = await fetch(`${API_BASE}/ask`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            question: question
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        displayAskResults(data);
+
+      } catch (error) {
+        resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      }
+    });
+
+    // Example question buttons
+    document.querySelectorAll('.example-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const question = e.target.dataset.question;
+        document.getElementById('question').value = question;
+        document.getElementById('askForm').dispatchEvent(new Event('submit'));
+      });
+    });
+
+    function displaySearchResults(data) {
+      const resultsDiv = document.getElementById('searchResults');
+
+      if (!data.hospitals || data.hospitals.length === 0) {
+        resultsDiv.innerHTML = '<div>No hospitals found matching your criteria.</div>';
+        return;
+      }
+
+      let html = `<h3>Found ${data.total_count} hospitals:</h3>`;
+
+      data.hospitals.forEach((hospital, index) => {
+        html += `
+                    <div class="hospital">
+                        <h4>${index + 1}. ${hospital.provider_name}</h4>
+                        <p><strong>Location:</strong> ${hospital.provider_city || 'N/A'}, ${hospital.provider_state || 'N/A'}</p>
+                        ${hospital.distance_km ? `<p><strong>Distance:</strong> ${hospital.distance_km} km</p>` : ''}
+                        ${hospital.average_covered_charges ? `<p><strong>Average Charges:</strong> $${Number(hospital.average_covered_charges).toLocaleString()}</p>` : ''}
+                        ${hospital.average_total_payments ? `<p><strong>Average Payments:</strong> $${Number(hospital.average_total_payments).toLocaleString()}</p>` : ''}
+                        ${hospital.average_rating ? `<p><strong>Rating:</strong> ${hospital.average_rating}/10</p>` : ''}
+                        ${hospital.total_discharges ? `<p><strong>Volume:</strong> ${hospital.total_discharges} discharges</p>` : ''}
+                        ${hospital.ms_drg_definition ? `<p><strong>Procedure:</strong> ${hospital.ms_drg_definition}</p>` : ''}
+                    </div>
+                `;
+      });
+
+      resultsDiv.innerHTML = html;
+    }
+
+    function displayAskResults(data) {
+      const resultsDiv = document.getElementById('askResults');
+
+      const html = `
+                <h3>AI Assistant Response:</h3>
+                <p><strong>Your Question:</strong> ${data.question}</p>
+                <p><strong>Answer:</strong></p>
+                <div style="background: white; padding: 15px; border: 1px solid #ddd; white-space: pre-line;">
+                    ${data.answer}
+                </div>
+                <p style="font-size: 12px; color: #666; margin-top: 10px;">
+                    Data source: ${data.data_source}
+                </p>
+            `;
+
+      resultsDiv.innerHTML = html;
+    }
+
+    // Test API connection on page load
+    window.addEventListener('load', async () => {
+      try {
+        const response = await fetch(`${API_BASE}/health`);
+        if (response.ok) {
+          console.log('API connection successful');
+        } else {
+          console.warn('API might not be running at', API_BASE);
+        }
+      } catch (error) {
+        console.warn('Could not connect to API:', error.message);
+      }
+    });
+  </script>
+</body>
+
+</html>
