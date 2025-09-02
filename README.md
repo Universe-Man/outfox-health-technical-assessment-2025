@@ -1,5 +1,16 @@
 # outfox-health-technical-assessment-2025
 
+This I Did Not Get To In Time After 4.5 Hours:
+ - Build a basic HTML page to render the fetched results from the POST request of the CSV provided.
+ - Add input field to make a GET request to the database matching specific details about a particular row (rating and location).
+ - The location find would have required use of a ZIP Code API to calculate the current user's zip code and the rage from it to other zip codes.
+ - Add a GET endpoint to fetch all applicable providers.
+ - Add a POST endpoint to send a request to OpenAI's API platform to get a response from the LLM and display it in the HTML.
+
+I might be missing some but that's what is top of mind. Getting the project started without any template provided obviously took a lot of time that could have been used more productively to show my skills as installing and setting up Docker and getting the right libraries to work with the current versions of everything took me a couple of hours. I would have loved to dive deeper into this, but it is pretty typical for initial project setup to take some time. Hopefully I can elaborate on what I would have done in a future interview. Looking forward to hearing your notes and the next steps. Thank you! - Ian Pollack -
+
+Official README Below:
+
 Project Structure:
 outfox-health-technical-assessment-2025/
 ├── app/
